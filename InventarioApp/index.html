@@ -1,0 +1,1889 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventario - Automation Chihuahua</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #f5f5f5;
+            --bg-secondary: white;
+            --bg-tertiary: #fafafa;
+            --text-primary: #333;
+            --text-secondary: #666;
+            --text-tertiary: #999;
+            --border-color: #e0e0e0;
+            --sidebar-bg: rgb(248, 248, 249);
+            --accent-blue: #0066cc;
+            --accent-blue-dark: #0052a3;
+            --accent-blue-light: #e3f2fd;
+            --accent-green: #4caf50;
+            --accent-green-light: #e8f5e9;
+            --accent-orange: #ff9800;
+            --accent-orange-light: #fff3e0;
+            --accent-red: #f44336;
+            --accent-red-light: #ffebee;
+        }
+
+        body.dark-mode {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2d2d2d;
+            --bg-tertiary: #3a3a3a;
+            --text-primary: #f0f0f0;
+            --text-secondary: #c0c0c0;
+            --text-tertiary: #909090;
+            --border-color: #444;
+            --sidebar-bg: #252525;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-primary);
+            display: flex;
+            height: 100vh;
+            color: var(--text-primary);
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            font-size: 13px;
+            color: var(--text-primary);
+            cursor: pointer;
+            background-color: var(--bg-secondary);
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            transition: all 0.2s;
+            width: 100%;
+            justify-content: center;
+            margin-bottom: 12px;
+            font-family: inherit;
+        }
+
+        .theme-toggle:hover {
+            background-color: var(--bg-tertiary);
+        }
+
+        .theme-toggle svg {
+            width: 16px;
+            height: 16px;
+            stroke: currentColor;
+            stroke-width: 2;
+            fill: none;
+        }
+        /* LOGIN SCREEN */
+        .login-screen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0066cc, #0052a3);
+        }
+
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .login-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .login-subtitle {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .login-input {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+            .login-input:focus {
+                outline: none;
+                border-color: #0066cc;
+                box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+            }
+
+        .login-button {
+            padding: 12px;
+            background: linear-gradient(135deg, #0066cc, #0052a3);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+            .login-button:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 5px 15px rgba(0, 102, 204, 0.4);
+            }
+
+        .login-error {
+            color: #f44336;
+            font-size: 12px;
+            text-align: center;
+            display: none;
+        }
+
+        .app-container {
+            display: none;
+            width: 100%;
+            height: 100%;
+        }
+
+            .app-container.authenticated {
+                display: flex;
+            }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: 254px;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .logo-section {
+            padding: 20px;
+            background-color: var(--sidebar-bg);
+        }
+
+        .logo-icon {
+            width: 100%;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-icon svg {
+            width: 80%;
+            height: 100%;
+            filter: brightness(1.2);
+        }
+
+        .nav-menu {
+            flex: 1;
+            padding: 20px 0;
+            background-color: var(--sidebar-bg);
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 20px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            background-color: var(--sidebar-bg);
+        }
+
+            .nav-item:hover {
+                background-color: var(--bg-secondary);
+                color: var(--accent-blue);
+            }
+
+            .nav-item.active {
+                background-color: var(--bg-secondary);
+                color: var(--accent-blue);
+                border-left: 4px solid var(--accent-blue);
+                padding-left: 16px;
+            }
+
+            .nav-item.disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+        }
+
+        .user-section {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            background-color: var(--sidebar-bg);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background-color: var(--bg-secondary);
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0066cc, #0052a3);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .user-role {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .logout-button {
+            width: 100%;
+            padding: 10px;
+            background-color: var(--accent-red-light);
+            color: var(--accent-red);
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+            .logout-button:hover {
+                background-color: var(--accent-red);
+                color: white;
+            }
+
+        /* MAIN CONTENT */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .top-bar {
+            background-color: var(--bg-secondary);
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background-color: #0971bc;
+            color: #ffffff;
+        }
+
+            .btn-primary:hover {
+                opacity: 0.8;
+            }
+
+        .btn-success {
+            background-color: var(--accent-green-light);
+            color: var(--accent-green);
+        }
+
+            .btn-success:hover {
+                opacity: 0.8;
+            }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+        }
+
+        .section {
+            display: none;
+        }
+
+            .section.active {
+                display: block;
+            }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 24px;
+        }
+
+        /* CONTENT GRID */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .card {
+            background-color: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+        }
+
+        .quick-actions {
+            grid-column: 1;
+        }
+
+        .movement-history {
+            grid-column: 2;
+        }
+
+        .actions-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+        }
+
+        .action-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            gap: 12px;
+            border: none;
+            background: none;
+        }
+
+        .action-add {
+            background-color: var(--accent-green-light);
+        }
+
+            .action-add:hover {
+                opacity: 0.8;
+            }
+
+        .action-remove {
+            background-color: var(--accent-orange-light);
+        }
+
+            .action-remove:hover {
+                opacity: 0.8;
+            }
+
+        .action-edit {
+            background-color: var(--accent-blue-light);
+        }
+
+            .action-edit:hover {
+                opacity: 0.8;
+            }
+
+        body.dark-mode .action-add {
+            background-color: #1d5621;
+        }
+
+        body.dark-mode .action-remove {
+            background-color: #7c3e1c;
+        }
+
+        body.dark-mode .action-edit {
+            background-color: #1a3a5c;
+        }
+
+        /* Dropdown Usuario */
+        .user-dropdown {
+            position: relative;
+        }
+
+        .user-dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: var(--bg-secondary);
+            min-width: 180px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            padding: 12px 0;
+            z-index: 1;
+            border-radius: 6px;
+            bottom: -120px;
+            left: 0;
+            border: 1px solid var(--border-color);
+        }
+
+            .user-dropdown-content.show {
+                display: block;
+            }
+
+        .user-dropdown-item {
+            color: var(--text-primary);
+            padding: 10px 16px;
+            text-decoration: none;
+            display: block;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+            .user-dropdown-item:hover {
+                background-color: var(--bg-tertiary);
+            }
+
+        /* Quick search */
+        .quick-search {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 13px;
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+            margin-bottom: 16px;
+        }
+
+            .quick-search:focus {
+                outline: none;
+                border-color: var(--accent-blue);
+                box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+            }
+
+        .actions-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+        }
+
+        /* Users list */
+        .user-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 13px;
+        }
+
+            .user-list-item:last-child {
+                border-bottom: none;
+            }
+
+        .user-info-card {
+            flex: 1;
+        }
+
+        .user-info-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .user-info-role {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .role-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            background-color: var(--accent-blue-light);
+            color: var(--accent-blue);
+        }
+
+        .action-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            background-color: #4c82eb;
+        }
+
+        .action-add .action-icon {
+            background-color: var(--accent-green);
+        }
+
+        .action-remove .action-icon {
+            background-color: var(--accent-orange);
+        }
+
+        .action-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            text-align: center;
+        }
+
+        .action-desc {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        /* HISTORIAL */
+        .history-item {
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            font-size: 12px;
+        }
+
+            .history-item:last-child {
+                border-bottom: none;
+            }
+
+        .history-action {
+            font-weight: 600;
+            color: var(--accent-blue);
+            margin-bottom: 4px;
+        }
+
+        .history-details {
+            color: var(--text-secondary);
+            margin-bottom: 2px;
+        }
+
+        .history-time {
+            color: var(--text-tertiary);
+            white-space: nowrap;
+            margin-left: 12px;
+        }
+
+        /* TABLE SECTION */
+        .table-section {
+            background-color: var(--bg-secondary);
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+
+        .table-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--bg-tertiary);
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 14px 20px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+            .tab:hover {
+                color: var(--text-primary);
+            }
+
+            .tab.active {
+                color: var(--accent-blue);
+                border-bottom-color: var(--accent-blue);
+            }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background-color: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        td {
+            padding: 14px 16px;
+            font-size: 13px;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        tbody tr {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+            tbody tr:hover {
+                background-color: var(--bg-tertiary);
+            }
+
+            tbody tr.selected {
+                background-color: var(--accent-blue-light);
+            }
+
+        .quantity-badge {
+            background-color: #919191;
+            color: #ffffff;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 6px;
+        }
+
+        .btn-sm {
+            padding: 6px 10px;
+            font-size: 11px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-edit {
+            background-color: #0062a9;
+            color: var(--accent-blue);
+        }
+
+            .btn-edit:hover {
+                opacity: 0.8;
+            }
+
+        .btn-delete {
+            background-color: #39393924;
+            color: #ffffff;
+        }
+
+            .btn-delete:hover {
+                opacity: 0.8;
+            }
+
+        /* MODAL */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+            .modal.active {
+                display: flex;
+            }
+
+        .modal-content {
+            background-color: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: inherit;
+            transition: all 0.2s;
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+            .form-input:focus, .form-select:focus {
+                outline: none;
+                border-color: var(--accent-blue);
+                box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+            }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+            justify-content: flex-end;
+        }
+
+        .btn-modal {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-modal-primary {
+            background-color: var(--accent-blue);
+            color: white;
+        }
+
+            .btn-modal-primary:hover {
+                background-color: var(--accent-blue-dark);
+            }
+
+        .btn-modal-secondary {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+            .btn-modal-secondary:hover {
+                background-color: var(--border-color);
+            }
+
+        /* SCROLL */
+        .scrollbar {
+            scrollbar-width: thin;
+            scrollbar-color: #ccc var(--bg-primary);
+        }
+
+            .scrollbar::-webkit-scrollbar {
+                width: 8px;
+            }
+
+            .scrollbar::-webkit-scrollbar-track {
+                background: var(--bg-primary);
+            }
+
+            .scrollbar::-webkit-scrollbar-thumb {
+                background: #ccc;
+                border-radius: 4px;
+            }
+
+                .scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: #999;
+                }
+
+        body.dark-mode .scrollbar {
+            scrollbar-color: #00000000 #00000000;
+        }
+    </style>
+</head>
+<body>
+    <!-- LOGIN SCREEN -->
+    <div class="login-screen" id="loginScreen">
+        <div class="login-container">
+            <div style="margin-bottom: 30px; display: flex; align-items: center; justify-content: center;">
+                <img src="C:\Users\4019461\Downloads\NEW INVENTORY SYSTEM\InventarioApp\InventarioApp\logo.png" alt="Logo" style="width: 270px; height: 60px;">
+            </div>
+            <div class="login-subtitle">Sistema de Inventario</div>
+            <div class="login-form">
+                <input type="text" class="login-input" id="loginUsername" placeholder="Usuario" autofocus>
+                <input type="password" class="login-input" id="loginPassword" placeholder="Contraseña">
+                <button class="login-button" onclick="doLogin()">Iniciar Sesión</button>
+                <div class="login-error" id="loginError"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- APP -->
+    <div class="app-container" id="appContainer">
+        <!-- SIDEBAR -->
+        <div class="sidebar scrollbar">
+            <div class="logo-section">
+                <div style="margin-bottom: 30px; display: flex; align-items: center; justify-content: center;">
+                    <img src="C:\Users\4019461\Downloads\NEW INVENTORY SYSTEM\InventarioApp\InventarioApp\logo.png" alt="Logo" style="width: 200px; height: 40px; margin-top: 20px;">
+                </div>
+            </div>
+
+            <div class="nav-menu">
+                <div class="nav-item active" data-section="inicio">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
+                    <span>Inicio</span>
+                </div>
+                <div class="nav-item" data-section="busqueda">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                    <span>Búsqueda</span>
+                </div>
+                <div class="nav-item" data-section="historial">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    <span>Historial</span>
+                </div>
+                <div class="nav-item" data-section="usuarios" id="navUsuarios">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    <span>Usuarios</span>
+                </div>
+            </div>
+
+            <div class="user-section">
+                <button class="theme-toggle" onclick="toggleTheme()">
+                    <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <span id="themeLabel">Modo Oscuro</span>
+                </button>
+
+                <div class="user-dropdown">
+                    <div class="user-profile" onclick="toggleUserDropdown()">
+                        <div class="user-avatar" id="userAvatar">A</div>
+                        <div class="user-info">
+                            <div class="user-name" id="userName">Usuario</div>
+                            <div class="user-role" id="userRole">Rol</div>
+                        </div>
+                    </div>
+                    <div class="user-dropdown-content" id="userDropdown">
+                        <div class="user-dropdown-item" onclick="doLogout()">Cerrar Sesión</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+            <!-- TOP BAR -->
+            <div class="top-bar">
+                <button class="btn btn-primary" onclick="exportData()">
+                    <span>📥</span>
+                    <span>Exportar</span>
+                </button>
+            </div>
+
+            <!-- CONTENT AREA -->
+            <div class="content-area scrollbar">
+                <!-- INICIO -->
+                <div id="inicio" class="section active">
+                    <h1 class="page-title">Inventario</h1>
+
+                    <div class="content-grid">
+                        <!-- ACCIONES RÁPIDAS -->
+                        <div class="card quick-actions">
+                            <div class="card-title">Búsqueda Rápida</div>
+                            <input type="text" class="quick-search" id="quickSearch" placeholder="Buscar material...">
+
+                            <div class="card-title" style="margin-top: 20px;">Acciones rápidas</div>
+                            <div class="actions-grid">
+                                <button class="action-card action-add" onclick="openAddModal()" id="btnAgregarCard">
+                                    <div class="action-icon">+</div>
+                                    <div class="action-label">Agregar</div>
+                                    <div class="action-desc">Material</div>
+                                </button>
+                                <button class="action-card action-remove" onclick="prepareRemoval()" id="btnRetirarCard">
+                                    <div class="action-icon">−</div>
+                                    <div class="action-label">Retirar</div>
+                                    <div class="action-desc">Seleccionado</div>
+                                </button>
+                                <button class="action-card action-edit" onclick="prepareEdit()" id="btnEditarCard">
+                                    <div class="action-icon">✎</div>
+                                    <div class="action-label">Editar</div>
+                                    <div class="action-desc">Seleccionado</div>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- HISTORIAL DE MOVIMIENTOS -->
+                        <div class="card movement-history">
+                            <div class="card-title">Últimos Movimientos</div>
+                            <div id="movementHistoryContainer" style="max-height: 400px; overflow-y: auto;">
+                                <div style="padding: 20px; text-align: center; color: var(--text-tertiary);">Sin movimientos registrados</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TABLA -->
+                    <div class="table-section">
+                        <div class="table-tabs" id="projectTabs">
+                            <div class="tab active" data-project="todos">Todos</div>
+                            <div class="tab" data-project="GECKO">GECKO</div>
+                            <div class="tab" data-project="SCORPION">SCORPION</div>
+                            <div class="tab" data-project="ELK">ELK</div>
+                            <div class="tab" data-project="MOOSE">MOOSE</div>
+                            <div class="tab" data-project="INFURROW">INFURROW</div>
+                        </div>
+
+                        <div class="table-wrapper">
+                            <table id="materialsTable">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Número de Parte</th>
+                                        <th>Descripción</th>
+                                        <th>Cantidad</th>
+                                        <th>Proyecto</th>
+                                        <th>Equipo</th>
+                                        <th>Marca</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="materialsBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BÚSQUEDA -->
+                <div id="busqueda" class="section">
+                    <h1 class="page-title">Búsqueda Avanzada</h1>
+                    <div class="card" style="margin-bottom: 20px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 12px;">
+                            <input type="text" class="form-input" id="searchParte" placeholder="Número de parte...">
+                            <input type="text" class="form-input" id="searchDescripcion" placeholder="Descripción...">
+                            <select class="form-select" id="searchProyecto">
+                                <option value="">Todos los proyectos</option>
+                                <option value="GECKO">GECKO</option>
+                                <option value="SCORPION">SCORPION</option>
+                                <option value="ELK">ELK</option>
+                                <option value="MOOSE">MOOSE</option>
+                                <option value="INFURROW">INFURROW</option>
+                            </select>
+                            <button class="btn btn-primary" onclick="performSearch()">Buscar</button>
+                        </div>
+                    </div>
+
+                    <div class="table-section">
+                        <div class="table-wrapper">
+                            <table id="searchTable">
+                                <thead>
+                                    <tr>
+                                        <th>Número de Parte</th>
+                                        <th>Descripción</th>
+                                        <th>Cantidad</th>
+                                        <th>Proyecto</th>
+                                        <th>Equipo</th>
+                                        <th>Marca</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="searchTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- HISTORIAL -->
+                <div id="historial" class="section">
+                    <h1 class="page-title">Historial Completo</h1>
+                    <div class="card" id="historialList"></div>
+                </div>
+
+                <!-- USUARIOS -->
+                <div id="usuarios" class="section">
+                    <h1 class="page-title">Gestión de Usuarios</h1>
+                    <button class="btn btn-primary" onclick="openAddUserModal()" style="margin-bottom: 20px;">
+                        <span>➕ Nuevo Usuario</span>
+                    </button>
+                    <div class="card">
+                        <div id="usersList" style="min-height: 200px;">
+                            <div style="padding: 20px; text-align: center; color: var(--text-tertiary);">Cargando usuarios...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL AGREGAR -->
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">Agregar Material</div>
+            <div class="form-group">
+                <label class="form-label">Número de Parte</label>
+                <input type="text" class="form-input" id="inputNumeroParte" placeholder="Ej: 5463453">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Descripción</label>
+                <input type="text" class="form-input" id="inputDescripcion" placeholder="Ej: Sensor">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Cantidad</label>
+                <input type="number" class="form-input" id="inputCantidad" placeholder="Cantidad" min="1">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Proyecto</label>
+                <select class="form-select" id="inputProyecto">
+                    <option value="">Seleccionar proyecto</option>
+                    <option value="GECKO">GECKO</option>
+                    <option value="SCORPION">SCORPION</option>
+                    <option value="ELK">ELK</option>
+                    <option value="MOOSE">MOOSE</option>
+                    <option value="INFURROW">INFURROW</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Equipo</label>
+                <input type="text" class="form-input" id="inputEquipo" placeholder="Ej: FINAL ASSY">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Marca</label>
+                <input type="text" class="form-input" id="inputMarca" placeholder="Ej: Keyence">
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-modal btn-modal-secondary" onclick="closeAddModal()">Cancelar</button>
+                <button class="btn-modal btn-modal-primary" onclick="saveMaterial()">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL EDITAR -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">Editar Material</div>
+            <div class="form-group">
+                <label class="form-label">Número de Parte</label>
+                <input type="text" class="form-input" id="editNumeroParte" readonly style="background-color: #f0f0f0;">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Descripción</label>
+                <input type="text" class="form-input" id="editDescripcion">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Cantidad</label>
+                <input type="number" class="form-input" id="editCantidad" min="1">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Proyecto</label>
+                <select class="form-select" id="editProyecto">
+                    <option value="GECKO">GECKO</option>
+                    <option value="SCORPION">SCORPION</option>
+                    <option value="ELK">ELK</option>
+                    <option value="MOOSE">MOOSE</option>
+                    <option value="INFURROW">INFURROW</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Equipo</label>
+                <input type="text" class="form-input" id="editEquipo">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Marca</label>
+                <input type="text" class="form-input" id="editMarca">
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-modal btn-modal-secondary" onclick="closeEditModal()">Cancelar</button>
+                <button class="btn-modal btn-modal-primary" onclick="updateMaterial()">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL RETIRAR -->
+    <div id="removeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">Retirar Material</div>
+            <div class="form-group">
+                <label class="form-label">Material Seleccionado</label>
+                <div class="form-input" style="background-color: #f0f0f0; border: 1px solid #ddd;" id="removeSelected">
+                    Ninguno
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Cantidad a Retirar</label>
+                <input type="number" class="form-input" id="removeCantidad" placeholder="Cantidad" min="1">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Motivo</label>
+                <select class="form-select" id="removeMotivo">
+                    <option value="">Seleccionar motivo</option>
+                    <option value="Uso">Uso</option>
+                    <option value="Dañado">Dañado</option>
+                    <option value="Pérdida">Pérdida</option>
+                    <option value="Devolución">Devolución</option>
+                </select>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-modal btn-modal-secondary" onclick="closeRemoveModal()">Cancelar</button>
+                <button class="btn-modal btn-modal-primary" onclick="removeMaterial()">Retirar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL AGREGAR USUARIO -->
+    <div id="addUserModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">Nuevo Usuario</div>
+            <div class="form-group">
+                <label class="form-label">Nombre</label>
+                <input type="text" class="form-input" id="newUserName" placeholder="Ej: Manuel">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Contraseña</label>
+                <input type="password" class="form-input" id="newUserPassword" placeholder="Contraseña">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Rol</label>
+                <select class="form-select" id="newUserRole">
+                    <option value="Operador">Operador (Solo ver)</option>
+                    <option value="Tecnico">Técnico (Agregar, Editar, Retirar)</option>
+                    <option value="Ingeniero">Ingeniero (Acceso total)</option>
+                </select>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-modal btn-modal-secondary" onclick="closeAddUserModal()">Cancelar</button>
+                <button class="btn-modal btn-modal-primary" onclick="createUser()">Crear Usuario</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ESTADO GLOBAL
+        let currentUser = null;
+        let allMaterials = [];
+        let historyData = [];
+        let allUsers = [];
+        let currentProject = 'todos';
+        let selectedMaterialId = null;
+        let chromeNative = null;
+        let editingMaterialId = null;
+
+        const rolePermissions = {
+            'Operador': { ver: true, agregar: false, editar: false, retirar: false, eliminar: false, usuarios: false },
+            'Tecnico': { ver: true, agregar: true, editar: true, retirar: true, eliminar: false, usuarios: false },
+            'Ingeniero': { ver: true, agregar: true, editar: true, retirar: true, eliminar: true, usuarios: true }
+        };
+
+        // ===== LOGIN =====
+        async function doLogin() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+
+            if (!username || !password) {
+                showLoginError('Completa usuario y contraseña');
+                return;
+            }
+
+            if (window.chrome && window.chrome.webview) {
+                const bridge = window.chrome.webview.hostObjects.chrome;
+                try {
+                    // Aquí falta un método en C# para validar usuario
+                    // Por ahora usamos datos de prueba
+                    if (username === 'admin' && password === 'admin123') {
+                        currentUser = {
+                            nombre: 'Admin',
+                            rol: 'Ingeniero',
+                            inicial: 'A'
+                        };
+                    } else if (username === 'manuel' && password === '1234') {
+                        currentUser = {
+                            nombre: 'Manuel',
+                            rol: 'Tecnico',
+                            inicial: 'M'
+                        };
+                    } else {
+                        showLoginError('Usuario o contraseña incorrectos');
+                        return;
+                    }
+
+                    chromeNative = bridge;
+                    await loadData();
+                    showApp();
+                } catch (e) {
+                    showLoginError('Error de conexión: ' + e);
+                }
+            } else {
+                // Modo de prueba sin BD
+                if (username === 'admin' && password === 'admin123') {
+                    currentUser = { nombre: 'Admin', rol: 'Ingeniero', inicial: 'A' };
+                } else {
+                    showLoginError('Usuario o contraseña incorrectos');
+                    return;
+                }
+                showApp();
+            }
+        }
+        // Tema oscuro
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
+            updateThemeUI();
+        }
+
+        function updateThemeUI() {
+            const isDark = document.body.classList.contains('dark-mode');
+            const icon = document.getElementById('themeIcon');
+            const label = document.getElementById('themeLabel');
+
+            if (isDark) {
+                icon.innerHTML = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
+                label.textContent = 'Modo Claro';
+            } else {
+                icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+                label.textContent = 'Modo Oscuro';
+            }
+        }
+
+        function initTheme() {
+            if (localStorage.getItem('theme') === 'dark') {
+                document.body.classList.add('dark-mode');
+            }
+            updateThemeUI();
+        }
+        function showLoginError(msg) {
+            const errorDiv = document.getElementById('loginError');
+            errorDiv.textContent = msg;
+            errorDiv.style.display = 'block';
+            setTimeout(() => errorDiv.style.display = 'none', 4000);
+        }
+
+        function showApp() {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('appContainer').classList.add('authenticated');
+            initTheme();  // ← AGREGAR ESTA LÍNEA
+            updateUserUI();
+            updatePermissions();
+            allUsers = [{ Nombre: 'Admin', Rol: 'Ingeniero', Activo: true }];
+        }
+
+        function doLogout() {
+            if (confirm('¿Cerrar sesión?')) {
+                currentUser = null;
+                document.getElementById('loginScreen').style.display = 'flex';
+                document.getElementById('appContainer').classList.remove('authenticated');
+                document.getElementById('loginUsername').value = '';
+                document.getElementById('loginPassword').value = '';
+                document.getElementById('userDropdown').classList.remove('show');
+            }
+        }
+
+        function toggleUserDropdown() {
+            const dropdown = document.getElementById('userDropdown');
+            dropdown.classList.toggle('show');
+        }
+
+        // Cerrar dropdown al hacer click afuera
+        document.addEventListener('click', function (e) {
+            const dropdown = document.getElementById('userDropdown');
+            const userProfile = document.querySelector('.user-profile');
+            if (dropdown && userProfile && !userProfile.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.remove('show');
+            }
+        });
+
+        function updateUserUI() {
+            document.getElementById('userName').textContent = currentUser.nombre;
+            document.getElementById('userRole').textContent = currentUser.rol;
+            document.getElementById('userAvatar').textContent = currentUser.inicial;
+        }
+
+        function updatePermissions() {
+            const perms = rolePermissions[currentUser.rol];
+
+            // Botones de acciones rápidas
+            document.getElementById('btnAgregarCard').style.display = perms.agregar ? '' : 'none';
+            document.getElementById('btnRetirarCard').style.display = perms.retirar ? '' : 'none';
+            document.getElementById('btnEditarCard').style.display = perms.editar ? '' : 'none';
+
+            // Nav usuarios (solo ingeniero)
+            document.getElementById('navUsuarios').style.display = perms.usuarios ? '' : 'none';
+
+            // Botones en tabla
+            updateTableButtons();
+        }
+
+        function updateTableButtons() {
+            const perms = rolePermissions[currentUser.rol];
+            const rows = document.querySelectorAll('#materialsBody tr');
+
+            rows.forEach(row => {
+                const buttons = row.querySelector('.action-buttons');
+                if (buttons) {
+                    const editBtn = buttons.querySelector('.btn-edit');
+                    const deleteBtn = buttons.querySelector('.btn-delete');
+                    if (editBtn) editBtn.style.display = perms.editar ? '' : 'none';
+                    if (deleteBtn) deleteBtn.style.display = perms.eliminar ? '' : 'none';
+                }
+            });
+        }
+
+        // ===== DATOS =====
+        async function loadData() {
+            if (!chromeNative) return;
+
+            try {
+                const materialsData = await chromeNative.ObtenerMateriales();
+                allMaterials = JSON.parse(materialsData) || [];
+
+                const historialData = await chromeNative.ObtenerHistorial();
+                historyData = JSON.parse(historialData) || [];
+
+                loadMaterials();
+                loadHistory();
+                loadUsers();
+            } catch (e) {
+                console.error('Error cargando datos:', e);
+            }
+        }
+
+        function loadMaterials() {
+            const tbody = document.getElementById('materialsBody');
+            tbody.innerHTML = '';
+
+            let materials = allMaterials;
+            if (currentProject !== 'todos') {
+                materials = allMaterials.filter(m => (m.Proyecto || m.proyecto) === currentProject);
+            }
+
+            if (materials.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px;">No hay materiales</td></tr>';
+                return;
+            }
+
+            const perms = rolePermissions[currentUser.rol];
+
+            materials.forEach(material => {
+                const id = material.Id || material.id;
+                const parte = material.NumeroParte || material.parte;
+                const desc = material.Descripcion || material.descripcion;
+                const cant = material.Cantidad || material.cantidad;
+                const proy = material.Proyecto || material.proyecto;
+                const eq = material.Equipo || material.equipo;
+                const marca = material.Marca || material.marca;
+
+                let actionButtons = '';
+                if (perms.editar) {
+                    actionButtons += `<button class="btn-sm btn-edit" onclick="openEditModal(${id})">Editar</button>`;
+                }
+                if (perms.eliminar) {
+                    actionButtons += `<button class="btn-sm btn-delete" onclick="deleteMaterial(${id}, '${parte}')">Eliminar</button>`;
+                }
+
+                const row = `
+                        <tr onclick="selectRow(this, ${id})">
+                            <td>${id}</td>
+                            <td><strong>${parte}</strong></td>
+                            <td>${desc}</td>
+                            <td><span class="quantity-badge">${cant}</span></td>
+                            <td>${proy}</td>
+                            <td>${eq}</td>
+                            <td>${marca}</td>
+                            <td>
+                                <div class="action-buttons">${actionButtons}</div>
+                            </td>
+                        </tr>
+                    `;
+                tbody.innerHTML += row;
+            });
+
+            updateTableButtons();
+        }
+
+        function selectRow(row, id) {
+            document.querySelectorAll('#materialsBody tr').forEach(r => r.classList.remove('selected'));
+            row.classList.add('selected');
+            selectedMaterialId = id;
+        }
+
+        function loadHistory() {
+            const container = document.getElementById('movementHistoryContainer');
+            const fullContainer = document.getElementById('historialList');
+
+            if (historyData.length === 0) {
+                container.innerHTML = '<div style="padding: 20px; text-align: center;">Sin movimientos</div>';
+                fullContainer.innerHTML = '<div style="padding: 20px; text-align: center;">Sin historial</div>';
+                return;
+            }
+
+            // Últimos 5 movimientos
+            const recent = historyData.slice(-5).reverse();
+            container.innerHTML = '';
+            recent.forEach(entry => {
+                const accion = entry.Accion || entry.Tipo || 'Desconocido';
+                const detalles = entry.Detalles || entry.NumeroParte || '';
+                const fecha = entry.Fecha || entry.Cambio || 'N/A';
+                const usuario = entry.Usuario || 'Sistema';
+
+                const html = `
+                        <div class="history-item">
+                            <div>
+                                <div class="history-action">${accion}</div>
+                                <div class="history-details">${detalles} - ${usuario}</div>
+                            </div>
+                            <div class="history-time">${fecha}</div>
+                        </div>
+                    `;
+                container.innerHTML += html;
+            });
+
+            // Historial completo
+            fullContainer.innerHTML = '';
+            historyData.reverse().forEach(entry => {
+                const accion = entry.Accion || entry.Tipo || 'Desconocido';
+                const detalles = entry.Detalles || entry.NumeroParte || '';
+                const fecha = entry.Fecha || entry.Cambio || 'N/A';
+                const usuario = entry.Usuario || 'Sistema';
+
+                const html = `
+                        <div class="history-item">
+                            <div>
+                                <div class="history-action">${accion}</div>
+                                <div class="history-details">${detalles} - ${usuario}</div>
+                            </div>
+                            <div class="history-time">${fecha}</div>
+                        </div>
+                    `;
+                fullContainer.innerHTML += html;
+            });
+        }
+
+        // ===== MODALES =====
+        function openAddModal() {
+            document.getElementById('addModal').classList.add('active');
+        }
+
+        function closeAddModal() {
+            document.getElementById('addModal').classList.remove('active');
+        }
+
+        function openEditModal(id) {
+            const material = allMaterials.find(m => (m.Id || m.id) === id);
+            if (!material) return;
+
+            editingMaterialId = id;
+            document.getElementById('editNumeroParte').value = material.NumeroParte || material.parte;
+            document.getElementById('editDescripcion').value = material.Descripcion || material.descripcion;
+            document.getElementById('editCantidad').value = material.Cantidad || material.cantidad;
+            document.getElementById('editProyecto').value = material.Proyecto || material.proyecto;
+            document.getElementById('editEquipo').value = material.Equipo || material.equipo;
+            document.getElementById('editMarca').value = material.Marca || material.marca;
+
+            document.getElementById('editModal').classList.add('active');
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.remove('active');
+            editingMaterialId = null;
+        }
+
+        function prepareRemoval() {
+            if (!selectedMaterialId) {
+                alert('Selecciona un material de la tabla');
+                return;
+            }
+
+            const material = allMaterials.find(m => (m.Id || m.id) === selectedMaterialId);
+            if (!material) return;
+
+            const parte = material.NumeroParte || material.parte;
+            document.getElementById('removeSelected').textContent = `${parte} (${material.Cantidad || material.cantidad} disponibles)`;
+            document.getElementById('removeModal').classList.add('active');
+        }
+
+        function prepareEdit() {
+            if (!selectedMaterialId) {
+                alert('Selecciona un material de la tabla');
+                return;
+            }
+
+            const material = allMaterials.find(m => (m.Id || m.id) === selectedMaterialId);
+            if (!material) return;
+
+            openEditModal(selectedMaterialId);
+        }
+
+        function closeRemoveModal() {
+            document.getElementById('removeModal').classList.remove('active');
+        }
+
+        function openAddUserModal() {
+            document.getElementById('addUserModal').classList.add('active');
+        }
+
+        function closeAddUserModal() {
+            document.getElementById('addUserModal').classList.remove('active');
+        }
+
+        // ===== OPERACIONES =====
+        async function saveMaterial() {
+            const numeroParte = document.getElementById('inputNumeroParte').value;
+            const descripcion = document.getElementById('inputDescripcion').value;
+            const cantidad = parseInt(document.getElementById('inputCantidad').value) || 0;
+            const proyecto = document.getElementById('inputProyecto').value;
+            const equipo = document.getElementById('inputEquipo').value;
+            const marca = document.getElementById('inputMarca').value;
+
+            if (!numeroParte || !descripcion || cantidad <= 0 || !proyecto) {
+                alert('Completa todos los campos');
+                return;
+            }
+
+            if (chromeNative) {
+                try {
+                    const resultado = await chromeNative.AgregarMaterial(numeroParte, descripcion, cantidad, proyecto, equipo, marca, currentUser.nombre);
+                    if (resultado.includes('OK')) {
+                        closeAddModal();
+                        await loadData();
+                        alert('Material agregado');
+                    }
+                } catch (e) {
+                    alert('Error: ' + e);
+                }
+            }
+        }
+
+        async function updateMaterial() {
+            if (!editingMaterialId) return;
+
+            const descripcion = document.getElementById('editDescripcion').value;
+            const cantidad = parseInt(document.getElementById('editCantidad').value) || 0;
+            const proyecto = document.getElementById('editProyecto').value;
+            const equipo = document.getElementById('editEquipo').value;
+            const marca = document.getElementById('editMarca').value;
+
+            if (!descripcion || cantidad <= 0 || !proyecto) {
+                alert('Completa todos los campos');
+                return;
+            }
+
+            if (chromeNative) {
+                try {
+                    const resultado = await chromeNative.ActualizarMaterial(editingMaterialId, descripcion, cantidad, proyecto, equipo, marca, currentUser.nombre);
+                    if (resultado.includes('OK')) {
+                        closeEditModal();
+                        await loadData();
+                        alert('Material actualizado');
+                    } else {
+                        alert('Error: ' + resultado);
+                    }
+                } catch (e) {
+                    alert('Error: ' + e);
+                }
+            }
+        }
+
+        async function removeMaterial() {
+            const cantidad = parseInt(document.getElementById('removeCantidad').value) || 0;
+            const motivo = document.getElementById('removeMotivo').value;
+
+            if (cantidad <= 0 || !motivo) {
+                alert('Completa los campos');
+                return;
+            }
+
+            if (chromeNative) {
+                try {
+                    const resultado = await chromeNative.RetirarMaterial(selectedMaterialId, cantidad, currentUser.nombre);
+                    if (resultado.includes('OK')) {
+                        closeRemoveModal();
+                        await loadData();
+                        alert('Material retirado');
+                    } else {
+                        alert('Error: ' + resultado);
+                    }
+                } catch (e) {
+                    alert('Error: ' + e);
+                }
+            }
+        }
+
+        async function deleteMaterial(id, nombre) {
+            if (!confirm(`¿Eliminar "${nombre}"?`)) return;
+
+            if (chromeNative) {
+                try {
+                    const resultado = await chromeNative.EliminarMaterial(id, currentUser.nombre);
+                    if (resultado.includes('OK')) {
+                        await loadData();
+                        alert('Material eliminado');
+                    } else {
+                        alert('Error: ' + resultado);
+                    }
+                } catch (e) {
+                    alert('Error: ' + e);
+                }
+            }
+        }
+
+        // ===== USUARIOS =====
+        async function createUser() {
+            const nombre = document.getElementById('newUserName').value;
+            const password = document.getElementById('newUserPassword').value;
+            const rol = document.getElementById('newUserRole').value;
+
+            if (!nombre || !password || !rol) {
+                alert('Completa todos los campos');
+                return;
+            }
+
+            if (chromeNative) {
+                try {
+                    const resultado = await chromeNative.CrearUsuario(nombre, password, rol);
+                    if (resultado.includes('OK')) {
+                        // Agregar a lista local
+                        allUsers.push({ Nombre: nombre, Rol: rol, Activo: true });
+
+                        closeAddUserModal();
+                        document.getElementById('newUserName').value = '';
+                        document.getElementById('newUserPassword').value = '';
+                        document.getElementById('newUserRole').value = 'Operador';
+                        loadUsers();
+                        alert(`Usuario "${nombre}" creado con rol "${rol}"`);
+                    } else {
+                        alert('Error: ' + resultado);
+                    }
+                } catch (e) {
+                    alert('Error: ' + e);
+                }
+            }
+        }
+
+        function loadUsers() {
+            const container = document.getElementById('usersList');
+
+            // Inicializar con Admin por defecto
+            if (allUsers.length === 0) {
+                allUsers = [{ Nombre: 'Admin', Rol: 'Ingeniero', Activo: true }];
+            }
+
+            if (allUsers.length === 0) {
+                container.innerHTML = '<div style="padding: 20px; text-align: center;">No hay usuarios registrados</div>';
+                return;
+            }
+
+            container.innerHTML = '';
+            allUsers.forEach(user => {
+                const html = `
+                        <div class="user-list-item">
+                            <div class="user-info-card">
+                                <div class="user-info-name">${user.Nombre}</div>
+                                <div class="user-info-role"><span class="role-badge">${user.Rol}</span></div>
+                            </div>
+                            <div style="color: ${user.Activo ? 'var(--accent-green)' : 'var(--accent-red)'}; font-weight: 600;">
+                                ${user.Activo ? '✓ Activo' : '✗ Inactivo'}
+                            </div>
+                        </div>
+                    `;
+                container.innerHTML += html;
+            });
+        }
+
+        // ===== NAVEGACIÓN =====
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function () {
+                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+                const section = this.getAttribute('data-section');
+                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                document.getElementById(section).classList.add('active');
+
+                // Cargar usuarios cuando se abre esa sección
+                if (section === 'usuarios') {
+                    loadUsers();
+                }
+            });
+        });
+
+        // Búsqueda rápida
+        document.getElementById('quickSearch').addEventListener('input', function () {
+            const term = this.value.toLowerCase();
+            const rows = document.querySelectorAll('#materialsBody tr');
+            rows.forEach(row => {
+                row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none';
+            });
+        });
+
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function () {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                currentProject = this.getAttribute('data-project');
+                loadMaterials();
+            });
+        });
+
+        function exportData() {
+            const ws_data = [['ID', 'Número de Parte', 'Descripción', 'Cantidad', 'Proyecto', 'Equipo', 'Marca']];
+            allMaterials.forEach(m => {
+                ws_data.push([
+                    m.Id || m.id,
+                    m.NumeroParte || m.parte,
+                    m.Descripcion || m.descripcion,
+                    m.Cantidad || m.cantidad,
+                    m.Proyecto || m.proyecto,
+                    m.Equipo || m.equipo,
+                    m.Marca || m.marca
+                ]);
+            });
+
+            const ws = XLSX.utils.aoa_to_sheet(ws_data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Inventario');
+            XLSX.writeFile(wb, `inventario_${new Date().toISOString().split('T')[0]}.xlsx`);
+        }
+
+        async function performSearch() {
+            const parte = document.getElementById('searchParte').value.toLowerCase();
+            const descripcion = document.getElementById('searchDescripcion').value.toLowerCase();
+            const proyecto = document.getElementById('searchProyecto').value;
+
+            const results = allMaterials.filter(m => {
+                return (!parte || (m.NumeroParte || m.parte).toLowerCase().includes(parte)) &&
+                    (!descripcion || (m.Descripcion || m.descripcion).toLowerCase().includes(descripcion)) &&
+                    (!proyecto || (m.Proyecto || m.proyecto) === proyecto);
+            });
+
+            const tbody = document.getElementById('searchTableBody');
+            tbody.innerHTML = '';
+
+            if (results.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Sin resultados</td></tr>';
+                return;
+            }
+
+            results.forEach(m => {
+                const id = m.Id || m.id;
+                const row = `
+                        <tr>
+                            <td>${m.NumeroParte || m.parte}</td>
+                            <td>${m.Descripcion || m.descripcion}</td>
+                            <td><span class="quantity-badge">${m.Cantidad || m.cantidad}</span></td>
+                            <td>${m.Proyecto || m.proyecto}</td>
+                            <td>${m.Equipo || m.equipo}</td>
+                            <td>${m.Marca || m.marca}</td>
+                            <td>
+                                <button class="btn-sm btn-edit" onclick="openEditModal(${id})">Editar</button>
+                                <button class="btn-sm btn-delete" onclick="deleteMaterial(${id}, '${m.NumeroParte || m.parte}')">Eliminar</button>
+                            </td>
+                        </tr>
+                    `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        // Cerrar modales al hacer clic afuera
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', function (e) {
+                if (e.target === this) {
+                    this.classList.remove('active');
+                }
+            });
+        });
+
+        // Enter en login
+        document.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter' && document.getElementById('loginScreen').style.display !== 'none') {
+                doLogin();
+            }
+        });
+
+        // Inicializar
+        window.addEventListener('DOMContentLoaded', function () {
+            if (window.chrome && window.chrome.webview) {
+                chromeNative = window.chrome.webview.hostObjects.chrome;
+            }
+        });
+    </script>
+</body>
+</html>
